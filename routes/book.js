@@ -10,24 +10,27 @@ var esi = new ESI({
 });
 
 var BOOK_SERVICE_URL = 'https://book-catalog-proxy-5.herokuapp.com/book?isbn=';
+//var BOOK_COUNT_URL = 'http://book-service-gregers.herokuapp.com/stock';
+var BOOK_COUNT_URL = 'https://yvonnes-book-inventory-service.herokuapp.com/stock/';
 
-function pickRelevantBookData (data) {
+function pickRelevantBookData (isbn, data) {
     const volume = jp.value(data, '$..volumeInfo');
 
     return {
         bookTitle: volume.title,
         subtitle: volume.subtitle,
-        bookCover: jp.value(volume, '$..thumbnail')
+        bookCover: jp.value(volume, '$..thumbnail'),
+        stockCountURL: `${BOOK_COUNT_URL}/${isbn}`
     };
 }
 
 function renderPage (app, pageData) {
     return new Promise((resolve, reject) => {
-            app.render('book', pageData, (err, html) => {
+        app.render('book', pageData, (err, html) => {
             if (err) { return void reject(err); }
-    resolve(html);
-});
-});
+            resolve(html);
+        });
+    });
 }
 
 function partial (fn, args) {
@@ -35,13 +38,14 @@ function partial (fn, args) {
 }
 
 router.get('/:isbn', function (req, res, next) {
-    goodGuy(`${BOOK_SERVICE_URL}${req.params.isbn}`)
-    .then(response => JSON.parse(response.body))
-    .then(pickRelevantBookData)
+    const isbn = req.params.isbn;
+    goodGuy(`${BOOK_SERVICE_URL}${isbn}`)
+        .then(response => JSON.parse(response.body))
+        .then(partial(pickRelevantBookData, isbn))
         .then(partial(renderPage, req.app))
-        .then(html => esi.process(html))
-    .then(html => res.send(html))
-    .catch(next);
+        .then(html => esi.process(html, { headers: { Accept: 'text/html' } }))
+        .then(html => res.send(html))
+        .catch(next);
 });
 
 module.exports = router;

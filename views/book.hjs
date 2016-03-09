@@ -10,6 +10,9 @@
     <p>{{# bookCover}}
         <img src="{{ bookCover }}" alt="" />
     {{/ bookCover}}</p>
+    <!-- {{ stockCountURL }} -->
+    <esi:include src="{{ stockCountURL }}" />
+
     <esi:include src="https://kwasniew.github.io/footer.html" />
   </body>
 </html>
