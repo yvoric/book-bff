@@ -16,6 +16,7 @@ var BOOK_COUNT_URL = process.env.BOOK_COUNT_URL || 'https://yvonnes-book-invento
 function pickRelevantBookData (isbn, data) {
     const volume = jp.value(data, '$..volumeInfo');
 
+
     return {
         bookTitle: volume.title,
         subtitle: volume.subtitle,
@@ -42,8 +43,10 @@ router.get('/:isbn', function (req, res, next) {
     goodGuy(`${BOOK_SERVICE_URL}${isbn}`)
         .then(response => JSON.parse(response.body))
         .then(partial(pickRelevantBookData, isbn))
+        .then(pickRelevantBookData)
+        .then(bookData => Object.assign({ stockCountURL: `${BOOK_COUNT_URL}/${isbn}`, requestId }, bookData))
         .then(partial(renderPage, req.app))
-        .then(html => esi.process(html, { headers: { Accept: 'text/html' } }))
+        .then(html => esi.process(html, { headers: { 'Accept': 'text/html', 'x-request-id': requestId } }))
         .then(html => res.send(html))
         .catch(next);
 });
